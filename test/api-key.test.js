@@ -34,3 +34,16 @@ test('getConnectionStatus はキー本体を返さず設定状態だけを返す
   assert.deepEqual(result, { gemini: 'configured' });
   assert.equal(JSON.stringify(result).includes('test-key-value'), false);
 });
+
+test('testExternalConnections はGemini接続失敗を内部応答なしで分類する', () => {
+  const app = createShunsukeApplication({
+    connections: {
+      testGemini: () => { throw new Error('raw provider response'); },
+    },
+  });
+
+  const result = app.testExternalConnections();
+
+  assert.deepEqual(result, { gemini: { ok: false, code: 'CONNECTION_FAILED' } });
+  assert.equal(JSON.stringify(result).includes('raw provider response'), false);
+});

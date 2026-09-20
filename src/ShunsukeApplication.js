@@ -26,6 +26,14 @@ function createShunsukeApplication(dependencies) {
         gemini: dependencies.scriptProperties.isConfigured('GEMINI_API_KEY') ? 'configured' : 'not_configured',
       };
     },
+    testExternalConnections() {
+      try {
+        dependencies.connections.testGemini();
+        return { gemini: { ok: true, code: 'CONNECTED' } };
+      } catch (_error) {
+        return { gemini: { ok: false, code: 'CONNECTION_FAILED' } };
+      }
+    },
     savePostSlots(socialAccountId, slots) {
       if (!Array.isArray(slots) || slots.length > 6) {
         return { ok: false, code: 'SLOT_LIMIT_EXCEEDED' };
