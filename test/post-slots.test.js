@@ -57,3 +57,25 @@ test('savePostSlots は60分前以外の生成オフセットを保存せず GEN
 
   assert.deepEqual(result, { ok: false, code: 'GENERATION_OFFSET_INVALID' });
 });
+
+test('savePostSlots は有効な投稿枠へアカウントID・既定値・更新時刻を付けて保存する', () => {
+  let saved = null;
+  const app = createShunsukeApplication({
+    postSlots: {
+      replaceForAccount: (_socialAccountId, slots) => { saved = slots; },
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.savePostSlots('social-1', [{ slotId: 'slot-1', postTimeJst: '12:00' }]);
+
+  assert.deepEqual(result, { ok: true, code: 'SAVED' });
+  assert.deepEqual(saved, [{
+    slotId: 'slot-1',
+    socialAccountId: 'social-1',
+    postTimeJst: '12:00',
+    generationOffsetMinutes: 60,
+    status: 'ACTIVE',
+    updatedAt: '2026-09-20T10:00:00+09:00',
+  }]);
+});

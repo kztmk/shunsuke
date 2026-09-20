@@ -23,13 +23,19 @@ function createShunsukeApplication(dependencies) {
         return { ok: false, code: 'POST_TIME_INVALID' };
       }
 
-      const normalizedSlots = slots.map((slot) => ({
+      const offsetSlots = slots.map((slot) => ({
         ...slot,
         generationOffsetMinutes: slot.generationOffsetMinutes === undefined ? 60 : slot.generationOffsetMinutes,
       }));
-      if (normalizedSlots.some((slot) => slot.generationOffsetMinutes !== 60)) {
+      if (offsetSlots.some((slot) => slot.generationOffsetMinutes !== 60)) {
         return { ok: false, code: 'GENERATION_OFFSET_INVALID' };
       }
+      const normalizedSlots = offsetSlots.map((slot) => ({
+        ...slot,
+        socialAccountId,
+        status: slot.status === undefined ? 'ACTIVE' : slot.status,
+        updatedAt: dependencies.clock.nowJst(),
+      }));
 
       dependencies.postSlots.replaceForAccount(socialAccountId, normalizedSlots);
       return { ok: true, code: 'SAVED' };
