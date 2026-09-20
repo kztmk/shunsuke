@@ -12,6 +12,15 @@ function transferApprovedDraft(draft, destination) {
 
 function createShunsukeApplication(dependencies) {
   return {
+    saveApiKey(provider, value) {
+      if (provider !== 'gemini' || typeof value !== 'string' || value.length === 0) {
+        return { ok: false, code: 'API_KEY_INVALID' };
+      }
+
+      dependencies.scriptProperties.set('GEMINI_API_KEY', value);
+      dependencies.appSettings.markKeyConfigured(provider);
+      return { ok: true, code: 'SAVED' };
+    },
     savePostSlots(socialAccountId, slots) {
       if (!Array.isArray(slots) || slots.length > 6) {
         return { ok: false, code: 'SLOT_LIMIT_EXCEEDED' };
