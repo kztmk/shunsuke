@@ -28,6 +28,13 @@ function createShunsukeApplication(dependencies) {
       if (!['10代', '20代', '30代', '40代', '50代以上', '指定なし'].includes(input.ageBand)) {
         return { ok: false, code: 'AGE_BAND_INVALID' };
       }
+      if (input.destinationSpreadsheetId && input.destinationAccountId
+        && dependencies.socialAccounts.list().some((value) => value.socialAccountId !== input.socialAccountId
+          && value.platform === input.platform
+          && value.destinationSpreadsheetId === input.destinationSpreadsheetId
+          && value.destinationAccountId === input.destinationAccountId)) {
+        return { ok: false, code: 'DUPLICATE_DESTINATION_ACCOUNT' };
+      }
 
       dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };

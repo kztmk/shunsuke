@@ -100,3 +100,33 @@ test('saveSocialAccount は未定義の年代を保存せず AGE_BAND_INVALID �
 
   assert.deepEqual(result, { ok: false, code: 'AGE_BAND_INVALID' });
 });
+
+test('saveSocialAccount は同じ連携先アカウントを二重登録せず DUPLICATE_DESTINATION_ACCOUNT を返す', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: {
+      list: () => [{
+        socialAccountId: 'social-existing',
+        platform: 'X',
+        destinationSpreadsheetId: 'spreadsheet-1',
+        destinationAccountId: 'account-1',
+      }],
+      save: () => assert.fail('同じ連携先アカウントを保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.saveSocialAccount({
+    socialAccountId: 'social-new',
+    platform: 'X',
+    label: '東京向け',
+    country: '日本',
+    prefecture: '東京都',
+    municipality: '渋谷区',
+    gender: '指定なし',
+    ageBand: '指定なし',
+    destinationSpreadsheetId: 'spreadsheet-1',
+    destinationAccountId: 'account-1',
+  });
+
+  assert.deepEqual(result, { ok: false, code: 'DUPLICATE_DESTINATION_ACCOUNT' });
+});
