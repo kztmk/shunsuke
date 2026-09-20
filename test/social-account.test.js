@@ -1,0 +1,23 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+const { createShunsukeApplication } = require('../src/ShunsukeApplication');
+
+test('saveSocialAccount は日本以外の国を保存せず COUNTRY_FIXED_TO_JAPAN を返す', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: {
+      save: () => assert.fail('日本以外の国を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.saveSocialAccount({
+    platform: 'X',
+    label: '海外向け',
+    country: 'Canada',
+    prefecture: '東京都',
+    municipality: '渋谷区',
+  });
+
+  assert.deepEqual(result, { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' });
+});

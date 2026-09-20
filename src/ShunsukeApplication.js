@@ -12,6 +12,14 @@ function transferApprovedDraft(draft, destination) {
 
 function createShunsukeApplication(dependencies) {
   return {
+    saveSocialAccount(input) {
+      if (!input || input.country !== '日本') {
+        return { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' };
+      }
+
+      dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
+      return { ok: true, code: 'SAVED' };
+    },
     approveDraft(draftId) {
       const draft = dependencies.drafts.get(draftId);
       if (draft && draft.approvalStatus === 'transferred') {
