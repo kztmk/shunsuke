@@ -12,6 +12,14 @@ function transferApprovedDraft(draft, destination) {
 
 function createShunsukeApplication(dependencies) {
   return {
+    savePostSlots(socialAccountId, slots) {
+      if (!Array.isArray(slots) || slots.length > 6) {
+        return { ok: false, code: 'SLOT_LIMIT_EXCEEDED' };
+      }
+
+      dependencies.postSlots.replaceForAccount(socialAccountId, slots);
+      return { ok: true, code: 'SAVED' };
+    },
     saveSocialAccount(input) {
       if (!input || input.country !== '日本') {
         return { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' };
