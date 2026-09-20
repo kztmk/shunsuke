@@ -25,6 +25,9 @@ function createShunsukeApplication(dependencies) {
       if (!['女性', '男性', '指定なし'].includes(input.gender)) {
         return { ok: false, code: 'GENDER_INVALID' };
       }
+      if (!['10代', '20代', '30代', '40代', '50代以上', '指定なし'].includes(input.ageBand)) {
+        return { ok: false, code: 'AGE_BAND_INVALID' };
+      }
 
       dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };

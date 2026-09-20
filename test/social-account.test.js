@@ -79,3 +79,24 @@ test('saveSocialAccount は未定義の性別を保存せず GENDER_INVALID を�
 
   assert.deepEqual(result, { ok: false, code: 'GENDER_INVALID' });
 });
+
+test('saveSocialAccount は未定義の年代を保存せず AGE_BAND_INVALID を返す', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: {
+      save: () => assert.fail('未定義の年代を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.saveSocialAccount({
+    platform: 'X',
+    label: '東京向け',
+    country: '日本',
+    prefecture: '東京都',
+    municipality: '渋谷区',
+    gender: '指定なし',
+    ageBand: '35-39',
+  });
+
+  assert.deepEqual(result, { ok: false, code: 'AGE_BAND_INVALID' });
+});
