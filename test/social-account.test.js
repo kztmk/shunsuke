@@ -21,3 +21,22 @@ test('saveSocialAccount は日本以外の国を保存せず COUNTRY_FIXED_TO_JA
 
   assert.deepEqual(result, { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' });
 });
+
+test('saveSocialAccount は市区町村なしで保存せず LOCATION_REQUIRED を返す', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: {
+      save: () => assert.fail('市区町村なしの設定を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.saveSocialAccount({
+    platform: 'X',
+    label: '東京向け',
+    country: '日本',
+    prefecture: '東京都',
+    municipality: '',
+  });
+
+  assert.deepEqual(result, { ok: false, code: 'LOCATION_REQUIRED' });
+});

@@ -16,6 +16,9 @@ function createShunsukeApplication(dependencies) {
       if (!input || input.country !== '日本') {
         return { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' };
       }
+      if (!input.prefecture || !input.municipality) {
+        return { ok: false, code: 'LOCATION_REQUIRED' };
+      }
 
       dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };
