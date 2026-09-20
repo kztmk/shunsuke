@@ -23,7 +23,15 @@ function createShunsukeApplication(dependencies) {
         return { ok: false, code: 'POST_TIME_INVALID' };
       }
 
-      dependencies.postSlots.replaceForAccount(socialAccountId, slots);
+      const normalizedSlots = slots.map((slot) => ({
+        ...slot,
+        generationOffsetMinutes: slot.generationOffsetMinutes === undefined ? 60 : slot.generationOffsetMinutes,
+      }));
+      if (normalizedSlots.some((slot) => slot.generationOffsetMinutes !== 60)) {
+        return { ok: false, code: 'GENERATION_OFFSET_INVALID' };
+      }
+
+      dependencies.postSlots.replaceForAccount(socialAccountId, normalizedSlots);
       return { ok: true, code: 'SAVED' };
     },
     saveSocialAccount(input) {
