@@ -33,3 +33,15 @@ test('savePostSlots は同時刻の投稿枠を重複保存せず DUPLICATE_POST
 
   assert.deepEqual(result, { ok: false, code: 'DUPLICATE_POST_TIME' });
 });
+
+test('savePostSlots は不正な投稿時刻を保存せず POST_TIME_INVALID を返す', () => {
+  const app = createShunsukeApplication({
+    postSlots: {
+      replaceForAccount: () => assert.fail('不正な投稿時刻を保存してはならない'),
+    },
+  });
+
+  const result = app.savePostSlots('social-1', [{ postTimeJst: '24:30' }]);
+
+  assert.deepEqual(result, { ok: false, code: 'POST_TIME_INVALID' });
+});

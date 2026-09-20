@@ -19,6 +19,9 @@ function createShunsukeApplication(dependencies) {
       if (new Set(slots.map((slot) => slot.postTimeJst)).size !== slots.length) {
         return { ok: false, code: 'DUPLICATE_POST_TIME' };
       }
+      if (slots.some((slot) => !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(slot.postTimeJst))) {
+        return { ok: false, code: 'POST_TIME_INVALID' };
+      }
 
       dependencies.postSlots.replaceForAccount(socialAccountId, slots);
       return { ok: true, code: 'SAVED' };
