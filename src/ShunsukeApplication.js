@@ -21,6 +21,11 @@ function createShunsukeApplication(dependencies) {
       dependencies.appSettings.markKeyConfigured(provider);
       return { ok: true, code: 'SAVED' };
     },
+    getConnectionStatus() {
+      return {
+        gemini: dependencies.scriptProperties.isConfigured('GEMINI_API_KEY') ? 'configured' : 'not_configured',
+      };
+    },
     savePostSlots(socialAccountId, slots) {
       if (!Array.isArray(slots) || slots.length > 6) {
         return { ok: false, code: 'SLOT_LIMIT_EXCEEDED' };

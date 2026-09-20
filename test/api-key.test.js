@@ -21,3 +21,16 @@ test('saveApiKey はキー本体を ScriptProperties だけに保存する', () 
   assert.deepEqual(stored, [{ key: 'GEMINI_API_KEY', value: 'test-key-value' }]);
   assert.deepEqual(configured, ['gemini']);
 });
+
+test('getConnectionStatus はキー本体を返さず設定状態だけを返す', () => {
+  const app = createShunsukeApplication({
+    scriptProperties: {
+      isConfigured: (key) => key === 'GEMINI_API_KEY',
+    },
+  });
+
+  const result = app.getConnectionStatus();
+
+  assert.deepEqual(result, { gemini: 'configured' });
+  assert.equal(JSON.stringify(result).includes('test-key-value'), false);
+});
