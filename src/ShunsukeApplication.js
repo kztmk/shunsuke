@@ -12,6 +12,14 @@ function transferApprovedDraft(draft, destination) {
 
 function createShunsukeApplication(dependencies) {
   return {
+    transferApprovedDraft(draftId) {
+      const draft = dependencies.drafts.get(draftId);
+      const result = transferApprovedDraft(draft, dependencies.destinations);
+      if (!result.ok) return result;
+
+      dependencies.drafts.save({ ...draft, approvalStatus: 'transferred' });
+      return result;
+    },
     saveApiKey(provider, value) {
       if (provider !== 'gemini' || typeof value !== 'string' || value.length === 0) {
         return { ok: false, code: 'API_KEY_INVALID' };
