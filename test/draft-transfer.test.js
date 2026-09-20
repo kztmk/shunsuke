@@ -69,7 +69,7 @@ test('アプリケーションの transferApprovedDraft は二度目の転送を
 });
 
 test('期限切れ原稿は approveDraft で承認せず EXPIRED を返す', () => {
-  const draft = {
+  let draft = {
     draftId: 'draft-expired',
     approvalStatus: 'editing',
     expiresAt: '2026-09-20T10:00:00+09:00',
@@ -77,13 +77,13 @@ test('期限切れ原稿は approveDraft で承認せず EXPIRED を返す', () 
   const app = createShunsukeApplication({
     drafts: {
       get: (draftId) => draftId === draft.draftId ? draft : null,
-      save: () => assert.fail('期限切れ原稿を保存してはならない'),
+      save: (value) => { draft = value; },
     },
     clock: { nowJst: () => '2026-09-20T10:00:01+09:00' },
   });
 
   assert.deepEqual(app.approveDraft('draft-expired'), { ok: false, code: 'EXPIRED' });
-  assert.equal(draft.approvalStatus, 'editing');
+  assert.equal(draft.approvalStatus, 'expired');
 });
 
 test('approveDraft は有効期限がある編集済み原稿へ承認時刻を記録する', () => {

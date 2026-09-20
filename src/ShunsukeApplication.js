@@ -134,7 +134,11 @@ function createShunsukeApplication(dependencies) {
       }
       const nowJst = dependencies.clock.nowJst();
       const expiresAt = draft && Date.parse(draft.expiresAt);
-      if (!draft || !Number.isFinite(expiresAt) || !Number.isFinite(Date.parse(nowJst)) || expiresAt <= Date.parse(nowJst)) {
+      if (!draft || !Number.isFinite(expiresAt) || !Number.isFinite(Date.parse(nowJst))) {
+        return { ok: false, code: 'EXPIRED' };
+      }
+      if (expiresAt <= Date.parse(nowJst)) {
+        dependencies.drafts.save({ ...draft, approvalStatus: 'expired' });
         return { ok: false, code: 'EXPIRED' };
       }
       if (dependencies.drafts.listBySlot(draft.slotId)
