@@ -33,3 +33,21 @@ test('期限切れ原稿は approveDraft で承認せず EXPIRED を返す', () 
   assert.deepEqual(app.approveDraft('draft-expired'), { ok: false, code: 'EXPIRED' });
   assert.equal(draft.approvalStatus, 'editing');
 });
+
+test('転送済み原稿は approveDraft で再承認せず ALREADY_TRANSFERRED を返す', () => {
+  const draft = {
+    draftId: 'draft-transferred',
+    approvalStatus: 'transferred',
+    expiresAt: '2026-09-20T12:00:00+09:00',
+  };
+  const app = createShunsukeApplication({
+    drafts: {
+      get: () => draft,
+      save: () => assert.fail('転送済み原稿を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  assert.deepEqual(app.approveDraft('draft-transferred'), { ok: false, code: 'ALREADY_TRANSFERRED' });
+  assert.equal(draft.approvalStatus, 'transferred');
+});

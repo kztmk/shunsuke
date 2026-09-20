@@ -14,6 +14,9 @@ function createShunsukeApplication(dependencies) {
   return {
     approveDraft(draftId) {
       const draft = dependencies.drafts.get(draftId);
+      if (draft && draft.approvalStatus === 'transferred') {
+        return { ok: false, code: 'ALREADY_TRANSFERRED' };
+      }
       if (!draft || draft.expiresAt <= dependencies.clock.nowJst()) {
         return { ok: false, code: 'EXPIRED' };
       }
