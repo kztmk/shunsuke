@@ -23,6 +23,9 @@ function createShunsukeApplication(dependencies) {
       if (draft && draft.approvalStatus === 'exported') {
         return { ok: false, code: 'ALREADY_EXPORTED' };
       }
+      if (draft && draft.approvalStatus === 'failed') {
+        return { ok: false, code: 'FAILED' };
+      }
       if (!draft || draft.expiresAt <= dependencies.clock.nowJst()) {
         return { ok: false, code: 'EXPIRED' };
       }

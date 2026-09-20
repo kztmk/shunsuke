@@ -107,3 +107,21 @@ test('出力済み原稿は approveDraft で再承認せず ALREADY_EXPORTED を
   assert.deepEqual(app.approveDraft('draft-exported'), { ok: false, code: 'ALREADY_EXPORTED' });
   assert.equal(draft.approvalStatus, 'exported');
 });
+
+test('失敗した原稿は approveDraft で承認せず FAILED を返す', () => {
+  const draft = {
+    draftId: 'draft-failed',
+    approvalStatus: 'failed',
+    expiresAt: '2026-09-20T12:00:00+09:00',
+  };
+  const app = createShunsukeApplication({
+    drafts: {
+      get: () => draft,
+      save: () => assert.fail('失敗した原稿を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  assert.deepEqual(app.approveDraft('draft-failed'), { ok: false, code: 'FAILED' });
+  assert.equal(draft.approvalStatus, 'failed');
+});
