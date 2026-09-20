@@ -39,8 +39,14 @@ function createShunsukeApplication(dependencies) {
       if (!Number.isInteger(keywordCount) || keywordCount < 1 || keywordCount > 6) {
         return { ok: false, code: 'KEYWORD_COUNT_OUT_OF_RANGE' };
       }
+      const productsPerKeyword = input.productsPerKeyword === undefined ? 3 : input.productsPerKeyword;
+      if (!Number.isInteger(productsPerKeyword) || productsPerKeyword < 1 || productsPerKeyword > 6) {
+        return { ok: false, code: 'PRODUCTS_PER_KEYWORD_OUT_OF_RANGE' };
+      }
 
-      dependencies.socialAccounts.save({ ...input, keywordCount, updatedAt: dependencies.clock.nowJst() });
+      dependencies.socialAccounts.save({
+        ...input, keywordCount, productsPerKeyword, updatedAt: dependencies.clock.nowJst(),
+      });
       return { ok: true, code: 'SAVED' };
     },
     approveDraft(draftId) {

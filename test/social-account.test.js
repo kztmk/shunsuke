@@ -153,3 +153,26 @@ test('saveSocialAccount は検索語数が6件を超える場合に保存せず 
 
   assert.deepEqual(result, { ok: false, code: 'KEYWORD_COUNT_OUT_OF_RANGE' });
 });
+
+test('saveSocialAccount は検索語ごとの商品数が6件を超える場合に保存せず PRODUCTS_PER_KEYWORD_OUT_OF_RANGE を返す', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: {
+      save: () => assert.fail('商品数が上限超過の設定を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.saveSocialAccount({
+    platform: 'X',
+    label: '東京向け',
+    country: '日本',
+    prefecture: '東京都',
+    municipality: '渋谷区',
+    gender: '指定なし',
+    ageBand: '指定なし',
+    keywordCount: 3,
+    productsPerKeyword: 7,
+  });
+
+  assert.deepEqual(result, { ok: false, code: 'PRODUCTS_PER_KEYWORD_OUT_OF_RANGE' });
+});
