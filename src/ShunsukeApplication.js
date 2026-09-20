@@ -35,8 +35,12 @@ function createShunsukeApplication(dependencies) {
           && value.destinationAccountId === input.destinationAccountId)) {
         return { ok: false, code: 'DUPLICATE_DESTINATION_ACCOUNT' };
       }
+      const keywordCount = input.keywordCount === undefined ? 3 : input.keywordCount;
+      if (!Number.isInteger(keywordCount) || keywordCount < 1 || keywordCount > 6) {
+        return { ok: false, code: 'KEYWORD_COUNT_OUT_OF_RANGE' };
+      }
 
-      dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
+      dependencies.socialAccounts.save({ ...input, keywordCount, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };
     },
     approveDraft(draftId) {
