@@ -14,6 +14,17 @@ function createShunsukeApplication(dependencies) {
   return {
     transferApprovedDraft(draftId) {
       const draft = dependencies.drafts.get(draftId);
+      if (draft && draft.approvalStatus === 'transferred') {
+        return { ok: false, code: 'ALREADY_TRANSFERRED' };
+      }
+      if (!draft || draft.approvalStatus !== 'approved') {
+        return { ok: false, code: 'NOT_APPROVED' };
+      }
+      const expiresAt = draft && Date.parse(draft.expiresAt);
+      const now = dependencies.clock && dependencies.clock.nowJst();
+      if (!draft || !Number.isFinite(expiresAt) || !now || expiresAt <= Date.parse(now)) {
+        return { ok: false, code: 'EXPIRED' };
+      }
       const result = transferApprovedDraft(draft, dependencies.destinations);
       if (!result.ok) return result;
 
@@ -121,7 +132,9 @@ function createShunsukeApplication(dependencies) {
       if (draft && draft.approvalStatus === 'failed') {
         return { ok: false, code: 'FAILED' };
       }
-      if (!draft || draft.expiresAt <= dependencies.clock.nowJst()) {
+      const nowJst = dependencies.clock.nowJst();
+      const expiresAt = draft && Date.parse(draft.expiresAt);
+      if (!draft || !Number.isFinite(expiresAt) || !Number.isFinite(Date.parse(nowJst)) || expiresAt <= Date.parse(nowJst)) {
         return { ok: false, code: 'EXPIRED' };
       }
       if (dependencies.drafts.listBySlot(draft.slotId)
@@ -129,7 +142,7 @@ function createShunsukeApplication(dependencies) {
         return { ok: false, code: 'SLOT_ALREADY_APPROVED' };
       }
 
-      dependencies.drafts.save({ ...draft, approvalStatus: 'approved' });
+      dependencies.drafts.save({ ...draft, approvalStatus: 'approved', approvedAt: nowJst });
       return { ok: true, code: 'APPROVED' };
     },
   };
