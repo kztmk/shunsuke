@@ -40,3 +40,22 @@ test('saveSocialAccount は市区町村なしで保存せず LOCATION_REQUIRED �
 
   assert.deepEqual(result, { ok: false, code: 'LOCATION_REQUIRED' });
 });
+
+test('saveSocialAccount は未対応媒体を保存せず PLATFORM_UNSUPPORTED を返す', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: {
+      save: () => assert.fail('未対応媒体を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:00+09:00' },
+  });
+
+  const result = app.saveSocialAccount({
+    platform: 'Instagram',
+    label: '東京向け',
+    country: '日本',
+    prefecture: '東京都',
+    municipality: '渋谷区',
+  });
+
+  assert.deepEqual(result, { ok: false, code: 'PLATFORM_UNSUPPORTED' });
+});

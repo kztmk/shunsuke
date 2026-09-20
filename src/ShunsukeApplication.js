@@ -19,6 +19,9 @@ function createShunsukeApplication(dependencies) {
       if (!input.prefecture || !input.municipality) {
         return { ok: false, code: 'LOCATION_REQUIRED' };
       }
+      if (!['X', 'Threads', 'Bluesky'].includes(input.platform)) {
+        return { ok: false, code: 'PLATFORM_UNSUPPORTED' };
+      }
 
       dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };
