@@ -20,6 +20,10 @@ function createShunsukeApplication(dependencies) {
       if (!draft || draft.expiresAt <= dependencies.clock.nowJst()) {
         return { ok: false, code: 'EXPIRED' };
       }
+      if (dependencies.drafts.listBySlot(draft.slotId)
+        .some((value) => value.draftId !== draft.draftId && value.approvalStatus === 'approved')) {
+        return { ok: false, code: 'SLOT_ALREADY_APPROVED' };
+      }
 
       dependencies.drafts.save({ ...draft, approvalStatus: 'approved' });
       return { ok: true, code: 'APPROVED' };
