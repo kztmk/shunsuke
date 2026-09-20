@@ -10,6 +10,20 @@ function transferApprovedDraft(draft, destination) {
   return { ok: true, code: 'TRANSFERRED' };
 }
 
+function createShunsukeApplication(dependencies) {
+  return {
+    approveDraft(draftId) {
+      const draft = dependencies.drafts.get(draftId);
+      if (!draft || draft.expiresAt <= dependencies.clock.nowJst()) {
+        return { ok: false, code: 'EXPIRED' };
+      }
+
+      dependencies.drafts.save({ ...draft, approvalStatus: 'approved' });
+      return { ok: true, code: 'APPROVED' };
+    },
+  };
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { transferApprovedDraft };
+  module.exports = { createShunsukeApplication, transferApprovedDraft };
 }

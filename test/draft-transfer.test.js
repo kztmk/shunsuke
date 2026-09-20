@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { transferApprovedDraft } = require('../src/ShunsukeApplication');
+const { createShunsukeApplication, transferApprovedDraft } = require('../src/ShunsukeApplication');
 
 test('未承認の原稿は転送せず NOT_APPROVED を返す', () => {
   const destination = { rows: [], append: (row) => destination.rows.push(row) };
@@ -14,4 +14,22 @@ test('未承認の原稿は転送せず NOT_APPROVED を返す', () => {
 
   assert.deepEqual(result, { ok: false, code: 'NOT_APPROVED' });
   assert.deepEqual(destination.rows, []);
+});
+
+test('期限切れ原稿は approveDraft で承認せず EXPIRED を返す', () => {
+  const draft = {
+    draftId: 'draft-expired',
+    approvalStatus: 'editing',
+    expiresAt: '2026-09-20T10:00:00+09:00',
+  };
+  const app = createShunsukeApplication({
+    drafts: {
+      get: (draftId) => draftId === draft.draftId ? draft : null,
+      save: () => assert.fail('期限切れ原稿を保存してはならない'),
+    },
+    clock: { nowJst: () => '2026-09-20T10:00:01+09:00' },
+  });
+
+  assert.deepEqual(app.approveDraft('draft-expired'), { ok: false, code: 'EXPIRED' });
+  assert.equal(draft.approvalStatus, 'editing');
 });
