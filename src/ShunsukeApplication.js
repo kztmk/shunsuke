@@ -22,6 +22,9 @@ function createShunsukeApplication(dependencies) {
       if (!['X', 'Threads', 'Bluesky'].includes(input.platform)) {
         return { ok: false, code: 'PLATFORM_UNSUPPORTED' };
       }
+      if (!['女性', '男性', '指定なし'].includes(input.gender)) {
+        return { ok: false, code: 'GENDER_INVALID' };
+      }
 
       dependencies.socialAccounts.save({ ...input, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };
