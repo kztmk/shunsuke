@@ -18,3 +18,18 @@ test('savePostSlots は一アカウント7枠を保存せず SLOT_LIMIT_EXCEEDED
 
   assert.deepEqual(result, { ok: false, code: 'SLOT_LIMIT_EXCEEDED' });
 });
+
+test('savePostSlots は同時刻の投稿枠を重複保存せず DUPLICATE_POST_TIME を返す', () => {
+  const app = createShunsukeApplication({
+    postSlots: {
+      replaceForAccount: () => assert.fail('重複時刻の投稿枠を保存してはならない'),
+    },
+  });
+
+  const result = app.savePostSlots('social-1', [
+    { postTimeJst: '06:00' },
+    { postTimeJst: '06:00' },
+  ]);
+
+  assert.deepEqual(result, { ok: false, code: 'DUPLICATE_POST_TIME' });
+});

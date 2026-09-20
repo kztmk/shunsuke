@@ -16,6 +16,9 @@ function createShunsukeApplication(dependencies) {
       if (!Array.isArray(slots) || slots.length > 6) {
         return { ok: false, code: 'SLOT_LIMIT_EXCEEDED' };
       }
+      if (new Set(slots.map((slot) => slot.postTimeJst)).size !== slots.length) {
+        return { ok: false, code: 'DUPLICATE_POST_TIME' };
+      }
 
       dependencies.postSlots.replaceForAccount(socialAccountId, slots);
       return { ok: true, code: 'SAVED' };
