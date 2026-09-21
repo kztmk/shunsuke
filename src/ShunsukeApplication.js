@@ -72,6 +72,11 @@ function createShunsukeApplication(dependencies) {
         return { ok: false, code: 'CANDIDATE_GENERATION_FAILED' };
       }
     },
+    selectCandidate(candidateId) { try { return dependencies.phase5.selectCandidate(candidateId); } catch (_error) { return { ok: false, code: 'DRAFT_OPERATION_FAILED' }; } },
+    saveDraftEdit(draftId, body) { try { return dependencies.phase5.edit(draftId, body); } catch (_error) { return { ok: false, code: 'DRAFT_OPERATION_FAILED' }; } },
+    rejectCandidate(candidateId) { try { return dependencies.phase5.rejectCandidate(candidateId); } catch (_error) { return { ok: false, code: 'DRAFT_OPERATION_FAILED' }; } },
+    validateDraft(draftId, rule) { try { return dependencies.phase5.validate(draftId, rule); } catch (_error) { return { ok: false, code: 'DRAFT_OPERATION_FAILED' }; } },
+    rescheduleExpiredDraft(draftId, newPostSchedule) { try { return dependencies.phase5.rescheduleExpired(draftId, newPostSchedule); } catch (_error) { return { ok: false, code: 'DRAFT_OPERATION_FAILED' }; } },
     runDueGenerations(nowJst) {
       const now = Date.parse(nowJst);
       if (!isValidJstTimestamp(nowJst) || !Number.isFinite(now)) {
