@@ -176,3 +176,38 @@ test('saveSocialAccount は検索語ごとの商品数が6件を超える場合�
 
   assert.deepEqual(result, { ok: false, code: 'PRODUCTS_PER_KEYWORD_OUT_OF_RANGE' });
 });
+
+test('saveSocialAccount は品質条件・除外期間・文章条件を既定値付きで保存する', () => {
+  let saved = null;
+  const app = createShunsukeApplication({
+    socialAccounts: { list: () => [], save: (value) => { saved = value; } },
+    clock: { nowJst: () => '2026-09-21T10:00:00+09:00' },
+  });
+
+  assert.deepEqual(app.saveSocialAccount({
+    socialAccountId: 'social-1', platform: 'X', label: '東京向け', country: '日本',
+    prefecture: '東京都', municipality: '渋谷区', gender: '女性', ageBand: '30代',
+  }), { ok: true, code: 'SAVED' });
+  assert.deepEqual(saved, {
+    socialAccountId: 'social-1', platform: 'X', label: '東京向け', country: '日本',
+    prefecture: '東京都', municipality: '渋谷区', gender: '女性', ageBand: '30代',
+    keywordCount: 3, productsPerKeyword: 3, minReviewAverage: 4, minReviewCount: 10,
+    transferredCooldownDays: 7, rejectedCooldownDays: 3, tone: '', requiredPhrases: [], prohibitedPhrases: [],
+    updatedAt: '2026-09-21T10:00:00+09:00',
+  });
+});
+
+test('saveSocialAccount は不正な品質条件または除外期間を保存しない', () => {
+  const app = createShunsukeApplication({
+    socialAccounts: { list: () => [], save: () => assert.fail('不正な条件を保存してはならない') },
+    clock: { nowJst: () => '2026-09-21T10:00:00+09:00' },
+  });
+  const base = {
+    platform: 'X', label: '東京向け', country: '日本', prefecture: '東京都', municipality: '渋谷区',
+    gender: '女性', ageBand: '30代',
+  };
+  assert.deepEqual(app.saveSocialAccount({ ...base, minReviewAverage: 5.1 }), { ok: false, code: 'REVIEW_AVERAGE_INVALID' });
+  assert.deepEqual(app.saveSocialAccount({ ...base, minReviewAverage: NaN }), { ok: false, code: 'REVIEW_AVERAGE_INVALID' });
+  assert.deepEqual(app.saveSocialAccount({ ...base, minReviewCount: -1 }), { ok: false, code: 'REVIEW_COUNT_INVALID' });
+  assert.deepEqual(app.saveSocialAccount({ ...base, transferredCooldownDays: -1 }), { ok: false, code: 'COOLDOWN_INVALID' });
+});
