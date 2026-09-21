@@ -65,6 +65,13 @@ function isValidJstTimestamp(value) {
 
 function createShunsukeApplication(dependencies) {
   return {
+    generateForSlot(slotId, targetDateJst) {
+      try {
+        return dependencies.phase4.generateForSlot(slotId, targetDateJst);
+      } catch (_error) {
+        return { ok: false, code: 'CANDIDATE_GENERATION_FAILED' };
+      }
+    },
     runDueGenerations(nowJst) {
       const now = Date.parse(nowJst);
       if (!isValidJstTimestamp(nowJst) || !Number.isFinite(now)) {
