@@ -1,0 +1,16 @@
+# Local clasp project binding and credentials
+.clasp.json
+.clasprc.json
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Node.js dependencies and generated test output
+node_modules/
+coverage/
+*.log
+npm-debug.log*
