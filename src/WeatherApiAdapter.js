@@ -46,8 +46,8 @@ function createWeatherApiAdapter(dependencies) {
         const locationKey = String(location.id);
         const historyDate = previousDate(input.todayJst);
         const history = dependencies.client.history(locationKey, historyDate);
-        const forecast = dependencies.client.forecast(locationKey, 3);
-        const current = dependencies.client.current(locationKey);
+        const forecast = dependencies.client.forecast(locationKey, 3, input.fetchedAt);
+        const current = dependencies.client.current(locationKey, input.fetchedAt);
         const expectedDates = [input.todayJst, addDays(input.todayJst, 1), addDays(input.todayJst, 2)];
         if (!history || !history.day || !current || !Array.isArray(forecast) || forecast.length < 3) return { ok: false, code: 'PLAN_INSUFFICIENT' };
         if (forecast.slice(0, 3).map((day) => day.date).join(',') !== expectedDates.join(',')) return { ok: false, code: 'FORECAST_INCOMPLETE' };

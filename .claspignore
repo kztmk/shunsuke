@@ -1,0 +1,6 @@
+# Send only Apps Script runtime files. Node.js tests and project documents
+# must never be uploaded to the shared GAS global scope.
+**
+!appsscript.json
+!コード.js
+!src/**
