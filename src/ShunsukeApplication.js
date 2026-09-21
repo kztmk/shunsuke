@@ -158,26 +158,30 @@ function createShunsukeApplication(dependencies) {
       });
     },
     saveApiKey(provider, value) {
-      if (provider !== 'gemini' || typeof value !== 'string' || value.length === 0) {
+      const keyNames = { gemini: 'GEMINI_API_KEY', weatherApi: 'WEATHER_API_KEY' };
+      if (!keyNames[provider] || typeof value !== 'string' || value.length === 0) {
         return { ok: false, code: 'API_KEY_INVALID' };
       }
 
-      dependencies.scriptProperties.set('GEMINI_API_KEY', value);
+      dependencies.scriptProperties.set(keyNames[provider], value);
       dependencies.appSettings.markKeyConfigured(provider);
       return { ok: true, code: 'SAVED' };
     },
     getConnectionStatus() {
       return {
         gemini: dependencies.scriptProperties.isConfigured('GEMINI_API_KEY') ? 'configured' : 'not_configured',
+        weatherApi: dependencies.scriptProperties.isConfigured('WEATHER_API_KEY') ? 'configured' : 'not_configured',
       };
     },
     testExternalConnections() {
-      try {
-        dependencies.connections.testGemini();
-        return { gemini: { ok: true, code: 'CONNECTED' } };
-      } catch (_error) {
-        return { gemini: { ok: false, code: 'CONNECTION_FAILED' } };
+      const results = {};
+      if (typeof dependencies.connections.testGemini === 'function') {
+        try { dependencies.connections.testGemini(); results.gemini = { ok: true, code: 'CONNECTED' }; } catch (_error) { results.gemini = { ok: false, code: 'CONNECTION_FAILED' }; }
       }
+      if (typeof dependencies.connections.testWeatherApi === 'function') {
+        try { dependencies.connections.testWeatherApi(); results.weatherApi = { ok: true, code: 'CONNECTED' }; } catch (_error) { results.weatherApi = { ok: false, code: 'CONNECTION_FAILED' }; }
+      }
+      return results;
     },
     savePostSlots(socialAccountId, slots) {
       if (!Array.isArray(slots) || slots.length > 6) {
