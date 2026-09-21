@@ -6,12 +6,16 @@ const { createShunsukeApplication } = require('../src/ShunsukeApplication');
 test('saveApiKey はキー本体を ScriptProperties だけに保存する', () => {
   const stored = [];
   const configured = [];
+  const sheetRows = [];
   const app = createShunsukeApplication({
     scriptProperties: {
       set: (key, value) => stored.push({ key, value }),
     },
     appSettings: {
-      markKeyConfigured: (provider) => configured.push(provider),
+      markKeyConfigured: (provider) => {
+        configured.push(provider);
+        sheetRows.push({ key: `${provider}ApiKey`, value: 'configured' });
+      },
     },
   });
 
@@ -20,6 +24,7 @@ test('saveApiKey はキー本体を ScriptProperties だけに保存する', () 
   assert.deepEqual(result, { ok: true, code: 'SAVED' });
   assert.deepEqual(stored, [{ key: 'GEMINI_API_KEY', value: 'test-key-value' }]);
   assert.deepEqual(configured, ['gemini']);
+  assert.equal(JSON.stringify(sheetRows).includes('test-key-value'), false);
 });
 
 test('getConnectionStatus はキー本体を返さず設定状態だけを返す', () => {

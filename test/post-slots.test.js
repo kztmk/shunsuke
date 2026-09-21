@@ -46,6 +46,14 @@ test('savePostSlots は不正な投稿時刻を保存せず POST_TIME_INVALID �
   assert.deepEqual(result, { ok: false, code: 'POST_TIME_INVALID' });
 });
 
+test('savePostSlots は空の投稿枠を例外にせず POST_TIME_INVALID を返す', () => {
+  const app = createShunsukeApplication({
+    postSlots: { replaceForAccount: () => assert.fail('空の投稿枠を保存してはならない') },
+  });
+
+  assert.deepEqual(app.savePostSlots('social-1', [null]), { ok: false, code: 'POST_TIME_INVALID' });
+});
+
 test('savePostSlots は60分前以外の生成オフセットを保存せず GENERATION_OFFSET_INVALID を返す', () => {
   const app = createShunsukeApplication({
     postSlots: {

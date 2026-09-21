@@ -3,33 +3,86 @@ function transferApprovedDraft(draft, destination) {
     return { ok: false, code: 'NOT_APPROVED' };
   }
 
-  destination.append({
-    draftId: draft.draftId,
-    body: draft.finalBody,
-  });
+  destination.append({ draftId: draft.draftId, body: draft.finalBody });
   return { ok: true, code: 'TRANSFERRED' };
+}
+
+function createPostsRow(draft, transferId) {
+  const common = {
+    id: transferId,
+    createdAt: draft.approvedAt,
+    contents: draft.finalBody,
+    mediaUrls: [],
+    postSchedule: draft.postSchedule || '',
+    status: 'queued',
+    errorMessage: '',
+  };
+
+  if (draft.platform === 'X') {
+    return {
+      ...common,
+      postTo: draft.destinationAccountId || '',
+      inReplyToInternal: '',
+      postId: '',
+      inReplyToOnX: '',
+      quoteId: '',
+      repostTargetId: '',
+    };
+  }
+
+  return {
+    ...common,
+    platform: String(draft.platform || '').toLowerCase(),
+    accountId: draft.destinationAccountId || '',
+    crossPostGroupId: '',
+    inReplyTo: '',
+    postId: '',
+  };
 }
 
 function createShunsukeApplication(dependencies) {
   return {
     transferApprovedDraft(draftId) {
-      const draft = dependencies.drafts.get(draftId);
-      if (draft && draft.approvalStatus === 'transferred') {
-        return { ok: false, code: 'ALREADY_TRANSFERRED' };
-      }
-      if (!draft || draft.approvalStatus !== 'approved') {
-        return { ok: false, code: 'NOT_APPROVED' };
-      }
-      const expiresAt = draft && Date.parse(draft.expiresAt);
-      const now = dependencies.clock && dependencies.clock.nowJst();
-      if (!draft || !Number.isFinite(expiresAt) || !now || expiresAt <= Date.parse(now)) {
-        return { ok: false, code: 'EXPIRED' };
-      }
-      const result = transferApprovedDraft(draft, dependencies.destinations);
-      if (!result.ok) return result;
+      return dependencies.locks.withLock(`draft:${draftId}`, () => {
+        const draft = dependencies.drafts.get(draftId);
+        if (draft && draft.approvalStatus === 'transferred') {
+          return { ok: false, code: 'ALREADY_TRANSFERRED' };
+        }
+        if (!draft || draft.approvalStatus !== 'approved') {
+          return { ok: false, code: 'NOT_APPROVED' };
+        }
+        const expiresAt = Date.parse(draft.expiresAt);
+        const now = dependencies.clock.nowJst();
+        if (!Number.isFinite(expiresAt) || !Number.isFinite(Date.parse(now)) || expiresAt <= Date.parse(now)) {
+          return { ok: false, code: 'EXPIRED' };
+        }
+        if (!['X', 'Threads', 'Bluesky'].includes(draft.platform)) {
+          return { ok: false, code: 'DESTINATION_PLATFORM_INVALID' };
+        }
 
-      dependencies.drafts.save({ ...draft, approvalStatus: 'transferred' });
-      return result;
+        const transferId = draft.transferId || dependencies.ids.nextTransferId();
+        if (!draft.transferId) {
+          try {
+            dependencies.drafts.save({ ...draft, transferId });
+          } catch (_error) {
+            return { ok: false, code: 'SOURCE_SAVE_FAILED' };
+          }
+        }
+        try {
+          dependencies.destinations.appendIfAbsent(transferId, createPostsRow(draft, transferId));
+        } catch (error) {
+          if (error && error.message === 'POSTS_HEADERS_INVALID') {
+            return { ok: false, code: 'DESTINATION_CONTRACT_INVALID' };
+          }
+          return { ok: false, code: 'DESTINATION_APPEND_FAILED' };
+        }
+        try {
+          dependencies.drafts.save({ ...draft, transferId, approvalStatus: 'transferred' });
+          return { ok: true, code: 'TRANSFERRED' };
+        } catch (_error) {
+          return { ok: false, code: 'SOURCE_STATE_UPDATE_FAILED' };
+        }
+      });
     },
     saveApiKey(provider, value) {
       if (provider !== 'gemini' || typeof value !== 'string' || value.length === 0) {
@@ -57,11 +110,11 @@ function createShunsukeApplication(dependencies) {
       if (!Array.isArray(slots) || slots.length > 6) {
         return { ok: false, code: 'SLOT_LIMIT_EXCEEDED' };
       }
+      if (slots.some((slot) => !slot || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(slot.postTimeJst))) {
+        return { ok: false, code: 'POST_TIME_INVALID' };
+      }
       if (new Set(slots.map((slot) => slot.postTimeJst)).size !== slots.length) {
         return { ok: false, code: 'DUPLICATE_POST_TIME' };
-      }
-      if (slots.some((slot) => !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(slot.postTimeJst))) {
-        return { ok: false, code: 'POST_TIME_INVALID' };
       }
 
       const offsetSlots = slots.map((slot) => ({
@@ -82,21 +135,11 @@ function createShunsukeApplication(dependencies) {
       return { ok: true, code: 'SAVED' };
     },
     saveSocialAccount(input) {
-      if (!input || input.country !== '日本') {
-        return { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' };
-      }
-      if (!input.prefecture || !input.municipality) {
-        return { ok: false, code: 'LOCATION_REQUIRED' };
-      }
-      if (!['X', 'Threads', 'Bluesky'].includes(input.platform)) {
-        return { ok: false, code: 'PLATFORM_UNSUPPORTED' };
-      }
-      if (!['女性', '男性', '指定なし'].includes(input.gender)) {
-        return { ok: false, code: 'GENDER_INVALID' };
-      }
-      if (!['10代', '20代', '30代', '40代', '50代以上', '指定なし'].includes(input.ageBand)) {
-        return { ok: false, code: 'AGE_BAND_INVALID' };
-      }
+      if (!input || input.country !== '日本') return { ok: false, code: 'COUNTRY_FIXED_TO_JAPAN' };
+      if (!input.prefecture || !input.municipality) return { ok: false, code: 'LOCATION_REQUIRED' };
+      if (!['X', 'Threads', 'Bluesky'].includes(input.platform)) return { ok: false, code: 'PLATFORM_UNSUPPORTED' };
+      if (!['女性', '男性', '指定なし'].includes(input.gender)) return { ok: false, code: 'GENDER_INVALID' };
+      if (!['10代', '20代', '30代', '40代', '50代以上', '指定なし'].includes(input.ageBand)) return { ok: false, code: 'AGE_BAND_INVALID' };
       if (input.destinationSpreadsheetId && input.destinationAccountId
         && dependencies.socialAccounts.list().some((value) => value.socialAccountId !== input.socialAccountId
           && value.platform === input.platform
@@ -105,53 +148,44 @@ function createShunsukeApplication(dependencies) {
         return { ok: false, code: 'DUPLICATE_DESTINATION_ACCOUNT' };
       }
       const keywordCount = input.keywordCount === undefined ? 3 : input.keywordCount;
-      if (!Number.isInteger(keywordCount) || keywordCount < 1 || keywordCount > 6) {
-        return { ok: false, code: 'KEYWORD_COUNT_OUT_OF_RANGE' };
-      }
+      if (!Number.isInteger(keywordCount) || keywordCount < 1 || keywordCount > 6) return { ok: false, code: 'KEYWORD_COUNT_OUT_OF_RANGE' };
       const productsPerKeyword = input.productsPerKeyword === undefined ? 3 : input.productsPerKeyword;
-      if (!Number.isInteger(productsPerKeyword) || productsPerKeyword < 1 || productsPerKeyword > 6) {
-        return { ok: false, code: 'PRODUCTS_PER_KEYWORD_OUT_OF_RANGE' };
-      }
+      if (!Number.isInteger(productsPerKeyword) || productsPerKeyword < 1 || productsPerKeyword > 6) return { ok: false, code: 'PRODUCTS_PER_KEYWORD_OUT_OF_RANGE' };
 
-      dependencies.socialAccounts.save({
-        ...input, keywordCount, productsPerKeyword, updatedAt: dependencies.clock.nowJst(),
-      });
+      dependencies.socialAccounts.save({ ...input, keywordCount, productsPerKeyword, updatedAt: dependencies.clock.nowJst() });
       return { ok: true, code: 'SAVED' };
     },
     approveDraft(draftId) {
-      const draft = dependencies.drafts.get(draftId);
-      if (draft && draft.approvalStatus === 'transferred') {
-        return { ok: false, code: 'ALREADY_TRANSFERRED' };
-      }
-      if (draft && draft.approvalStatus === 'rejected') {
-        return { ok: false, code: 'REJECTED' };
-      }
-      if (draft && draft.approvalStatus === 'exported') {
-        return { ok: false, code: 'ALREADY_EXPORTED' };
-      }
-      if (draft && draft.approvalStatus === 'failed') {
-        return { ok: false, code: 'FAILED' };
-      }
-      const nowJst = dependencies.clock.nowJst();
-      const expiresAt = draft && Date.parse(draft.expiresAt);
-      if (!draft || !Number.isFinite(expiresAt) || !Number.isFinite(Date.parse(nowJst))) {
-        return { ok: false, code: 'EXPIRED' };
-      }
-      if (expiresAt <= Date.parse(nowJst)) {
-        dependencies.drafts.save({ ...draft, approvalStatus: 'expired' });
-        return { ok: false, code: 'EXPIRED' };
-      }
-      if (dependencies.drafts.listBySlot(draft.slotId)
-        .some((value) => value.draftId !== draft.draftId && value.approvalStatus === 'approved')) {
-        return { ok: false, code: 'SLOT_ALREADY_APPROVED' };
-      }
+      const initial = dependencies.drafts.get(draftId);
+      return dependencies.locks.withLock(`slot:${initial && initial.slotId}`, () => {
+        const draft = dependencies.drafts.get(draftId);
+        if (draft && draft.approvalStatus === 'transferred') return { ok: false, code: 'ALREADY_TRANSFERRED' };
+        if (draft && draft.approvalStatus === 'rejected') return { ok: false, code: 'REJECTED' };
+        if (draft && draft.approvalStatus === 'exported') return { ok: false, code: 'ALREADY_EXPORTED' };
+        if (draft && draft.approvalStatus === 'failed') return { ok: false, code: 'FAILED' };
 
-      dependencies.drafts.save({ ...draft, approvalStatus: 'approved', approvedAt: nowJst });
-      return { ok: true, code: 'APPROVED' };
+        const nowJst = dependencies.clock.nowJst();
+        const expiresAt = draft && Date.parse(draft.expiresAt);
+        if (!draft || !Number.isFinite(expiresAt) || !Number.isFinite(Date.parse(nowJst))) return { ok: false, code: 'EXPIRED' };
+        if (expiresAt <= Date.parse(nowJst)) {
+          dependencies.drafts.save({ ...draft, approvalStatus: 'expired' });
+          return { ok: false, code: 'EXPIRED' };
+        }
+        if (draft.approvalStatus !== 'editing' || !draft.finalBody || !draft.productCheckedAt || draft.validationStatus !== 'valid') {
+          return { ok: false, code: 'DRAFT_NOT_READY' };
+        }
+        if (dependencies.drafts.listBySlot(draft.slotId)
+          .some((value) => value.draftId !== draft.draftId && value.approvalStatus === 'approved')) {
+          return { ok: false, code: 'SLOT_ALREADY_APPROVED' };
+        }
+
+        dependencies.drafts.save({ ...draft, approvalStatus: 'approved', approvedAt: nowJst });
+        return { ok: true, code: 'APPROVED' };
+      });
     },
   };
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { createShunsukeApplication, transferApprovedDraft };
+  module.exports = { createShunsukeApplication, transferApprovedDraft, createPostsRow };
 }
