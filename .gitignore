@@ -5,6 +5,10 @@
 # Secrets and local configuration
 .env
 .env.*
+
+# Local working documents may contain machine-specific paths; never commit them.
+docs/
+.env.*
 !.env.example
 *.pem
 *.key
