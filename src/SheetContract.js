@@ -1,6 +1,7 @@
 const SHEET_CONTRACT = {
   AppSettings: ['key', 'value', 'updatedAt'],
   SocialAccounts: ['socialAccountId', 'platform', 'label', 'country', 'prefecture', 'municipality', 'gender', 'ageBand', 'keywordCount', 'productsPerKeyword', 'minReviewAverage', 'minReviewCount', 'transferredCooldownDays', 'rejectedCooldownDays', 'tone', 'requiredPhrases', 'prohibitedPhrases', 'destinationSpreadsheetId', 'destinationAccountId', 'status', 'updatedAt'],
+  IntegrationAccounts: ['source', 'accountId', 'platform', 'label', 'status'],
   PostSlots: ['slotId', 'socialAccountId', 'postTimeJst', 'generationOffsetMinutes', 'status', 'updatedAt'],
   GenerationRuns: ['generationId', 'slotId', 'socialAccountId', 'targetDateJst', 'scheduledGenerationAt', 'scheduledPostAt', 'startedAt', 'completedAt', 'status', 'weatherStatus', 'rankingStatus', 'searchStatus', 'aiStatus', 'candidateCount', 'errorCode'],
   WeatherEvidence: ['weatherEvidenceId', 'locationKey', 'source', 'sourceType', 'targetDate', 'summary', 'fetchedAt', 'rawExpiresAt', 'attribution', 'disclaimerVersion'],

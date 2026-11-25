@@ -15,6 +15,7 @@ docs/
 
 # Node.js dependencies and generated test output
 node_modules/
+dist/
 coverage/
 *.log
 npm-debug.log*

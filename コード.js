@@ -85,3 +85,14 @@ function collectWeatherEvidence(prefecture, municipality) {
     return { ok: false, code: 'WEATHER_EVIDENCE_SAVE_FAILED' };
   }
 }
+
+function integrationController() {
+  const properties = PropertiesService.getScriptProperties();
+  const spreadsheetId = (properties.getProperty('SHUNSUKE_SPREADSHEET_ID') || '').trim();
+  if (!spreadsheetId) throw new Error('SHUNSUKE_SPREADSHEET_ID_REQUIRED');
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  ensureSheetContract({ getSheet: (name) => spreadsheet.getSheetByName(name), createSheet: (name) => { const sheet = spreadsheet.insertSheet(name); return { setHeader: (header) => sheet.getRange(1, 1, 1, header.length).setValues([header]) }; } });
+  return createIntegrationSyncController({ now: () => Date.now(), newSecret: () => Utilities.getUuid(), properties: { get: (key) => properties.getProperty(key), set: (key, value) => properties.setProperty(key, value), delete: (key) => properties.deleteProperty(key) }, store: createGasIntegrationAccountStore(spreadsheet) });
+}
+function createIntegrationSetupCode(source) { const suffix = source === '虎威' ? 'TORAI' : source === '翔' ? 'AKIRA' : null; if (!suffix) return { ok: false, code: 'SOURCE_INVALID' }; const code = Utilities.getUuid(); const properties = PropertiesService.getScriptProperties(); properties.setProperty(`INTEGRATION_SETUP_CODE_${suffix}`, code); properties.setProperty(`INTEGRATION_SETUP_CODE_EXPIRES_AT_${suffix}`, String(Date.now() + 600000)); return { ok: true, setupCode: code }; }
+function doPost(event) { try { const request = JSON.parse(event.postData.contents); const controller = integrationController(); const result = request.action === 'initialize' ? controller.initialize(request) : controller.synchronize(request); return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON); } catch (_error) { return ContentService.createTextOutput(JSON.stringify({ ok: false, code: 'REQUEST_FAILED' })).setMimeType(ContentService.MimeType.JSON); } }
